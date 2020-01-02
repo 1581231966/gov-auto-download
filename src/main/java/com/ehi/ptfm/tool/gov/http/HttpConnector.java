@@ -1,23 +1,19 @@
 package com.ehi.ptfm.tool.gov.http;
 
 import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-public class HttpConnetor {
+public class HttpConnector {
 
 	private static OkHttpClient okHttpClient;
 	private String path;
-	private static final Logger LOGGER = Logger.getLogger(HttpConnetor.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(HttpConnector.class.getName());
 
 	static {
 		okHttpClient = new OkHttpClient.Builder()
@@ -26,7 +22,7 @@ public class HttpConnetor {
 				.build();
 	}
 
-	public HttpConnetor(String path) {
+	public HttpConnector(String path) {
 		this.path = path;
 	}
 
@@ -47,6 +43,10 @@ public class HttpConnetor {
 		return "";
 	}
 
+	/**
+	 * @param fileUrl path of PUF file.
+	 * download file from file-url and save to local dir.
+	 */
 	public void download(String fileUrl) {
 		Request request = new Request.Builder()
 				.url(fileUrl)
@@ -80,6 +80,8 @@ public class HttpConnetor {
 	}
 
 	private void writeFile(Response response) throws IOException{
+		CookieJar cookieJar ;
+
 		File file = new File(ApplicationProperties.getProperties("file.dir.root") + getFolderName(new Date()));
 		if (!file.exists()) {
 			if (file.mkdirs()) {

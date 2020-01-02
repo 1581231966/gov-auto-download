@@ -6,19 +6,35 @@ import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class HttpConnector {
 
 	private static OkHttpClient okHttpClient;
 	private String path;
+	private static HashMap<String, List<Cookie>> cookieStore = new HashMap<String, List<Cookie>>();
 	private static final Logger LOGGER = Logger.getLogger(HttpConnector.class.getName());
 
 	static {
 		okHttpClient = new OkHttpClient.Builder()
 				.readTimeout(30, TimeUnit.SECONDS)
 				.connectTimeout(30, TimeUnit.SECONDS)
+				.cookieJar(new CookieJar() {
+					@Override
+					public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+						cookieStore.put(url.host(), cookies);
+					}
+
+					@Override
+					public List<Cookie> loadForRequest(HttpUrl url) {
+						List<Cookie> cookies = cookieStore.get(url.host());
+						return cookies != null ? cookies : new ArrayList<Cookie>();
+					}
+				})
 				.build();
 	}
 
@@ -26,6 +42,9 @@ public class HttpConnector {
 		this.path = path;
 	}
 
+	public void changeUrlTo(String target){
+		this.path = target;
+	}
 	/**
 	 * @return Return the target site html text.
 	 */
@@ -43,6 +62,28 @@ public class HttpConnector {
 		return "";
 	}
 
+	/**
+	 * @param formBody A form used to login site.
+	 * @return Return the target site html text.
+	 */
+	public String getSiteBody(FormBody formBody){
+		Request request = new Request.Builder()
+				.url(path)
+				.post(formBody)
+				.build();
+		Call call = okHttpClient.newCall(request);
+		try {
+			Response response = call.execute();
+			return response.body().string();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return "";
+	}
+
+	public String getHost(){
+		return HttpUrl.parse(path).host();
+	}
 	/**
 	 * @param fileUrl path of PUF file.
 	 * download file from file-url and save to local dir.
@@ -63,12 +104,15 @@ public class HttpConnector {
 
 	private String getFileName(Response response) {
 		String dispositionHeader = response.header("Content-Disposition");
-		if (!dispositionHeader.isEmpty()) {
+		if (dispositionHeader != null &&!dispositionHeader.isEmpty()) {
 			String[] strings = dispositionHeader.split(";");
 			if (strings.length > 1) {
 				dispositionHeader = strings[1].replace("filename=", "");
 				return dispositionHeader.replace("\"", "").trim();
 			}
+		}else {
+			List<String> segments = response.request().url().pathSegments();
+			return segments.get(segments.size() - 1);
 		}
 		return null;
 	}
@@ -80,7 +124,6 @@ public class HttpConnector {
 	}
 
 	private void writeFile(Response response) throws IOException{
-		CookieJar cookieJar ;
 
 		File file = new File(ApplicationProperties.getProperties("file.dir.root") + getFolderName(new Date()));
 		if (!file.exists()) {

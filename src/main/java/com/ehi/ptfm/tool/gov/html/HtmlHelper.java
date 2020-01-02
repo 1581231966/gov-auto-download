@@ -18,11 +18,11 @@ public class HtmlHelper {
 
 	public ArrayList<Map<String, String>> getElementsByText(String selector, String textRegex) {
 		Elements elements = doc.select(selector);
-		elements.select(String.format("a:contains(%s)", textRegex));
+		elements = elements.select(String.format("a:contains(%s)", textRegex));
 		ArrayList<Map<String, String>> nameList = new ArrayList<Map<String, String>>();
 		for (Element element : elements){
 			Map<String, String> namePathMap = new HashMap<String, String>();
-			namePathMap.put(element.textNodes().get(0).toString(), element.attributes().get("href"));
+			namePathMap.put(element.textNodes().get(0).toString().trim(), element.attributes().get("href").trim());
 			nameList.add(namePathMap);
 		}
 		return nameList;

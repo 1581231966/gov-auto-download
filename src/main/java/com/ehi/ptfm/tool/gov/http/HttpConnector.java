@@ -1,6 +1,7 @@
 package com.ehi.ptfm.tool.gov.http;
 
 import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
+import com.ehi.ptfm.tool.gov.http.listener.ProgressListener;
 import okhttp3.*;
 import org.apache.log4j.Logger;
 
@@ -16,6 +17,7 @@ public class HttpConnector {
 
 	private static OkHttpClient okHttpClient;
 	private String path;
+
 	private static HashMap<String, List<Cookie>> cookieStore = new HashMap<String, List<Cookie>>();
 	private static final Logger LOGGER = Logger.getLogger(HttpConnector.class.getName());
 
@@ -33,6 +35,19 @@ public class HttpConnector {
 					public List<Cookie> loadForRequest(HttpUrl url) {
 						List<Cookie> cookies = cookieStore.get(url.host());
 						return cookies != null ? cookies : new ArrayList<Cookie>();
+					}
+				})
+				.addNetworkInterceptor(new Interceptor() {
+					@Override
+					public Response intercept(Chain chain) throws IOException {
+						Response response = chain.proceed(chain.request());
+						List<String> strings = chain.request().url().pathSegments();
+						if (strings.get(strings.size() -1).matches(".*zip")){
+							return response.newBuilder()
+									.body(new ProgressResponseBody(response.body(), new ProgressListener()))
+									.build();
+						}
+						return response;
 					}
 				})
 				.build();
@@ -137,6 +152,7 @@ public class HttpConnector {
 		if (fileName != null && !fileName.isEmpty()) {
 			file = new File(file, fileName);
 			if (file.createNewFile()) {
+				LOGGER.info("Start to download " + file.getName());
 				InputStream inputStream = response.body().byteStream();
 				FileOutputStream fileOutputStream = new FileOutputStream(file);
 				int length;
@@ -147,7 +163,7 @@ public class HttpConnector {
 				fileOutputStream.flush();
 				inputStream.close();
 				fileOutputStream.close();
-				LOGGER.info(String.format("Create a new file:%s.", file.getPath()));
+				LOGGER.info(String.format("Download Success:%s.", file.getPath()));
 			} else {
 				if (file.exists()) {
 					LOGGER.info(String.format("The file %s is exists.", file.getName()));

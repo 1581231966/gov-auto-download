@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class AppRunnerTest {
 
 	@Test
-	public void test(){
+	public void testDownloadZipCodeDatabase(){
 
 		HttpConnector connector = new HttpConnector("https://www.zip-codes.com/account_login.asp");
 		FormBody formBody = new FormBody.Builder()
@@ -42,8 +42,15 @@ public class AppRunnerTest {
 	}
 
 	@Test
-	public void testGetRootPath(){
-		HttpUrl url = HttpUrl.parse("https://www.zip-codes.com/account_login.asp");
-		System.out.println(url.host());
+	public void testDownloadPlanDirectory(){
+		HttpConnector connector = new HttpConnector("http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/index.html");
+		HtmlHelper htmlHelper = new HtmlHelper(Jsoup.parse(connector.getSiteBody()));
+		ArrayList<Map<String, String>> maps = htmlHelper.getElementsByText("li.menu-item", "Plan Directory");
+		for (Map<String, String> map : maps){
+			for (String key: map.keySet()) {
+				connector.changeUrlTo("https://" + connector.getHost()+ map.get(key));
+				htmlHelper = new HtmlHelper(Jsoup.parse(connector.getSiteBody()));
+			}
+		}
 	}
 }

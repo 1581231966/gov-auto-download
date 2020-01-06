@@ -10,13 +10,8 @@ import java.util.Map;
 
 public class HtmlHelper {
 
-	private Document doc;
 
-	public HtmlHelper(Document doc){
-		this.doc = doc;
-	}
-
-	public ArrayList<Map<String, String>> getElementsByText(String selector, String textRegex) {
+	public static ArrayList<Map<String, String>> getElementsByText(Document doc, String selector, String textRegex) {
 		Elements elements = doc.select(selector);
 		elements = elements.select(String.format("a:contains(%s)", textRegex));
 		ArrayList<Map<String, String>> nameList = new ArrayList<Map<String, String>>();
@@ -27,4 +22,10 @@ public class HtmlHelper {
 		}
 		return nameList;
 	}
+	public static Elements getElementsBySelector(Document doc, String selector, String textRegex) {
+		Elements elements = doc.select(selector);
+		return elements.select(String.format("a:matchesOwn(%s)", textRegex));
+	}
+
+
 }

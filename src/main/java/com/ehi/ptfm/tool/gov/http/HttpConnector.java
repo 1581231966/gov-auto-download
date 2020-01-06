@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class HttpConnector {
 
 	private static OkHttpClient okHttpClient;
-	private String path;
+	private HttpUrl url;
 
 	private static HashMap<String, List<Cookie>> cookieStore = new HashMap<String, List<Cookie>>();
 	private static final Logger LOGGER = Logger.getLogger(HttpConnector.class.getName());
@@ -42,7 +42,7 @@ public class HttpConnector {
 					public Response intercept(Chain chain) throws IOException {
 						Response response = chain.proceed(chain.request());
 						List<String> strings = chain.request().url().pathSegments();
-						if (strings.get(strings.size() -1).matches(".*zip")){
+						if (strings.get(strings.size() -1).matches(".*zip|.*pdf")){
 							return response.newBuilder()
 									.body(new ProgressResponseBody(response.body(), new ProgressListener()))
 									.build();
@@ -52,20 +52,19 @@ public class HttpConnector {
 				})
 				.build();
 	}
-
-	public HttpConnector(String path) {
-		this.path = path;
+	public HttpConnector(HttpUrl url) {
+		this.url = url;
 	}
 
 	public void changeUrlTo(String target){
-		this.path = target;
+		this.url = HttpUrl.parse(target);
 	}
 	/**
 	 * @return Return the target site html text.
 	 */
 	public String getSiteBody() {
 		Request request = new Request.Builder()
-				.url(path)
+				.url(url.toString())
 				.build();
 		Call call = okHttpClient.newCall(request);
 		try {
@@ -83,7 +82,7 @@ public class HttpConnector {
 	 */
 	public String getSiteBody(FormBody formBody){
 		Request request = new Request.Builder()
-				.url(path)
+				.url(url.toString())
 				.post(formBody)
 				.build();
 		Call call = okHttpClient.newCall(request);
@@ -97,7 +96,7 @@ public class HttpConnector {
 	}
 
 	public String getHost(){
-		return HttpUrl.parse(path).host();
+		return url.host();
 	}
 	/**
 	 * @param fileUrl path of PUF file.
@@ -174,5 +173,13 @@ public class HttpConnector {
 		} else {
 			LOGGER.error("Error in getting file name.");
 		}
+	}
+
+	public HttpUrl getUrl() {
+		return url;
+	}
+
+	public void setUrl(HttpUrl url) {
+		this.url = url;
 	}
 }

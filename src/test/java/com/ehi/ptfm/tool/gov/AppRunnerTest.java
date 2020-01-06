@@ -2,24 +2,28 @@ package com.ehi.ptfm.tool.gov;
 
 import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
 import com.ehi.ptfm.tool.gov.html.HtmlHelper;
+import com.ehi.ptfm.tool.gov.html.Selector;
 import com.ehi.ptfm.tool.gov.http.HttpConnector;
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import okhttp3.*;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AppRunnerTest {
 
 	@Test
 	public void testDownloadZipCodeDatabase(){
 
-		HttpConnector connector = new HttpConnector("https://www.zip-codes.com/account_login.asp");
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.zip-codes.com/account_login.asp"));
 		FormBody formBody = new FormBody.Builder()
 				.add("loginUsername", ApplicationProperties.getProperties("zip.code.username"))
 				.add("loginPassword", ApplicationProperties.getProperties("zip.code.password"))
@@ -27,30 +31,159 @@ public class AppRunnerTest {
 				.add("Submit", "Login")
 				.add("redir", "account_home.asp")
 				.build();
-
-		HtmlHelper htmlHelper = new HtmlHelper(Jsoup.parse(connector.getSiteBody(formBody)));
-		ArrayList<Map<String, String>> maps = htmlHelper.getElementsByText("body>table>tbody>tr>td:nth-child(2)>div>table>tbody>tr:nth-child(2)", "Download");
+		Document doc = Jsoup.parse(connector.getSiteBody(formBody));
+		ArrayList<Map<String, String>> maps = HtmlHelper.getElementsByText(doc, "body>table>tbody>tr>td:nth-child(2)>div>table>tbody>tr:nth-child(2)", "Download");
 		if(maps.size() == 1){
 			connector.changeUrlTo("https://" + connector.getHost() + "/" + maps.get(0).get("Download"));
-			htmlHelper = new HtmlHelper(Jsoup.parse(connector.getSiteBody()));
-			maps = htmlHelper.getElementsByText("body > table > tbody > tr > td:nth-child(2) > div > table:nth-child(6) > tbody", "[ Download ]");
+			maps = HtmlHelper.getElementsByText(Jsoup.parse(connector.getSiteBody()), "body > table > tbody > tr > td:nth-child(2) > div > table:nth-child(6) > tbody", "[ Download ]");
 			for (Map<String, String> map : maps){
-				System.out.println("Download "+ map.get("[ Download ]"));
 				connector.download("https://" + connector.getHost() + "/" + map.get("[ Download ]"));
 			}
 		}
 	}
 
 	@Test
-	public void testDownloadPlanDirectory(){
-		HttpConnector connector = new HttpConnector("http://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/index.html");
-		HtmlHelper htmlHelper = new HtmlHelper(Jsoup.parse(connector.getSiteBody()));
-		ArrayList<Map<String, String>> maps = htmlHelper.getElementsByText("li.menu-item", "Plan Directory");
-		for (Map<String, String> map : maps){
-			for (String key: map.keySet()) {
-				connector.changeUrlTo("https://" + connector.getHost()+ map.get(key));
-				htmlHelper = new HtmlHelper(Jsoup.parse(connector.getSiteBody()));
+	public void testDownloadMAPlanDirectory(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/MA-Plan-Directory-Items/MA-Plan-Directory"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "MA Plan Directory");
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getHost(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip")){
+				String urlString = url.toString();
+				connector.download(urlString);
 			}
 		}
+	}
+
+	@Test
+	public void testDownloadPDPPlanDirectory(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/PDP-Plan-Directory-Items/PDP-Plan-Directory"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "PDP Plan Directory");
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getHost(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip")){
+				String urlString = url.toString();
+				connector.download(urlString);
+			}
+		}
+	}
+
+	@Test
+	public void testDownloadRatingsData(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Medicare/Prescription-Drug-Coverage/PrescriptionDrugCovGenIn/PerformanceData"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "Star Ratings Data Table");
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getHost(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip")){
+				String urlString = url.toString();
+				connector.download(urlString);
+			}
+		}
+	}
+
+	@Test
+	public void testDownloadSourceLandscape(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Medicare/Prescription-Drug-Coverage/PrescriptionDrugCovGenIn/index"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", ".*Landscape Source Files|.*Plan and Premium Information for Medicare Plans Offering Part D Coverage");
+		elements = filter(elements);
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getHost(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip")){
+				String urlString = url.toString();
+				connector.download(urlString);
+			}
+		}
+	}
+
+	@Test
+	public void testDownloadFormularyReference(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Medicare/Prescription-Drug-Coverage/PrescriptionDrugCovContra/RxContracting_FormularyGuidance"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "li", "(CY \\d\\d\\d\\d).*Formulary Reference File");
+		elements = filter(elements);
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getHost(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip")){
+				String urlString = url.toString();
+				connector.download(urlString);
+			}
+		}
+	}
+
+	@Test
+	public void testDownloadFullNpi(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("http://download.cms.gov/nppes/NPI_Files.html"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "li", ".*(NPPES Data Dissemination - Monthly Deactivation Update)");
+
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getUrl(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip")){
+				String urlString = url.toString();
+				connector.download(urlString);
+			}
+		}
+	}
+
+	@Test
+	public void testDownloadRegional(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Medicare/Health-Plans/MedicareAdvtgSpecRateStats/Ratebooks-and-Supporting-Data-Items/2020Rates"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "li", "(Regional rates and benchmarks).*");
+
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getUrl(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip|.*pdf")){
+				String urlString = url.toString();
+				connector.download(urlString);
+			}
+		}
+	}
+
+	private HttpUrl parseUrl(String host, String index){
+		if (index.startsWith("/")){
+			return HttpUrl.parse("https://" +host + index);
+		}else{
+			return HttpUrl.parse("https://" +host + "/" + index);
+		}
+	}
+
+	private HttpUrl parseUrl(HttpUrl url, String index){
+		if (index.startsWith("/")){
+			return HttpUrl.parse("https://" +url.host() + index);
+		}else{
+			return url.resolve(index);
+		}
+	}
+
+	private Elements filter(Elements elements){
+		int temp = 0;
+		String regex = "\\d{4}";
+		Elements els = new Elements();
+		for (Element element : elements){
+			String text;
+			Pattern pattern = Pattern.compile(regex);
+			Matcher m = pattern.matcher(element.text());
+			if(m.find()){
+				text = m.group().trim();
+				if (temp <= Integer.valueOf(text)){
+					els.add(element);
+					System.out.println(element.text());
+					temp = Integer.valueOf(text);
+				}
+			}
+		}
+		return els;
 	}
 }

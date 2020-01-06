@@ -1,5 +1,6 @@
 package com.ehi.ptfm.tool.gov.http;
 
+import okhttp3.HttpUrl;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -9,7 +10,7 @@ public class HttpConnectorTest {
 	@Before
 	public void init(){
 		String path = "https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/MA-Plan-Directory-Items/MA-Plan-Directory";
-		connector = new HttpConnector(path);
+		connector = new HttpConnector(HttpUrl.parse(path));
 	}
 
 	@Test

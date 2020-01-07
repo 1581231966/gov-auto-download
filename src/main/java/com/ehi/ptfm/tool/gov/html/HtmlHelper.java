@@ -26,6 +26,9 @@ public class HtmlHelper {
 		Elements elements = doc.select(selector);
 		return elements.select(String.format("a:matchesOwn(%s)", textRegex));
 	}
+	public static Elements getElementsBySelector(Document doc, String selector) {
+		return doc.select(selector);
+	}
 
 
 }

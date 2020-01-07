@@ -34,10 +34,10 @@ public class AppRunnerTest {
 		Document doc = Jsoup.parse(connector.getSiteBody(formBody));
 		ArrayList<Map<String, String>> maps = HtmlHelper.getElementsByText(doc, "body>table>tbody>tr>td:nth-child(2)>div>table>tbody>tr:nth-child(2)", "Download");
 		if(maps.size() == 1){
-			connector.changeUrlTo("https://" + connector.getHost() + "/" + maps.get(0).get("Download"));
+			connector.changeUrlTo(parseUrl(connector.getUrl(), maps.get(0).get("Download")).toString());
 			maps = HtmlHelper.getElementsByText(Jsoup.parse(connector.getSiteBody()), "body > table > tbody > tr > td:nth-child(2) > div > table:nth-child(6) > tbody", "[ Download ]");
 			for (Map<String, String> map : maps){
-				connector.download("https://" + connector.getHost() + "/" + map.get("[ Download ]"));
+				connector.download(parseUrl(connector.getHost(), map.get("[ Download ]")).toString());
 			}
 		}
 	}
@@ -48,7 +48,7 @@ public class AppRunnerTest {
 		Document doc = Jsoup.parse(connector.getSiteBody());
 		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "MA Plan Directory");
 		for (Element element : elements){
-			HttpUrl url  =parseUrl(connector.getHost(), element.attributes().get("href").trim());
+			HttpUrl url  =parseUrl(connector.getUrl(), element.attributes().get("href").trim());
 			List<String> strs = url.pathSegments();
 			if (strs.get(strs.size() -1).matches(".*zip")){
 				String urlString = url.toString();
@@ -151,6 +151,23 @@ public class AppRunnerTest {
 		}
 	}
 
+	@Test
+	public void testDownloadSourceText(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("http://www.nber.org/data/cbsa-msa-fips-ssa-county-crosswalk.html"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "center", "(Source txt).*");
+
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getUrl(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip|.*pdf|.*txt")){
+				String urlString = url.toString();
+				connector.download(urlString);
+				break;
+			}
+		}
+	}
+
 	private HttpUrl parseUrl(String host, String index){
 		if (index.startsWith("/")){
 			return HttpUrl.parse("https://" +host + index);
@@ -160,11 +177,7 @@ public class AppRunnerTest {
 	}
 
 	private HttpUrl parseUrl(HttpUrl url, String index){
-		if (index.startsWith("/")){
-			return HttpUrl.parse("https://" +url.host() + index);
-		}else{
 			return url.resolve(index);
-		}
 	}
 
 	private Elements filter(Elements elements){

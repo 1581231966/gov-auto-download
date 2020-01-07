@@ -4,7 +4,6 @@ import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
 import com.ehi.ptfm.tool.gov.http.listener.ProgressListener;
 import okhttp3.*;
 import org.apache.log4j.Logger;
-
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -42,7 +41,7 @@ public class HttpConnector {
 					public Response intercept(Chain chain) throws IOException {
 						Response response = chain.proceed(chain.request());
 						List<String> strings = chain.request().url().pathSegments();
-						if (strings.get(strings.size() -1).matches(".*zip|.*pdf")){
+						if (strings.get(strings.size() -1).matches(".*zip|.*pdf|.*txt")){
 							return response.newBuilder()
 									.body(new ProgressResponseBody(response.body(), new ProgressListener()))
 									.build();
@@ -125,12 +124,15 @@ public class HttpConnector {
 				return dispositionHeader.replace("\"", "").trim();
 			}
 		}else {
-			List<String> segments = response.request().url().pathSegments();
-			return segments.get(segments.size() - 1);
+			return getFileName(response.request().url());
 		}
 		return null;
 	}
 
+	private String getFileName(HttpUrl fileUrl){
+		List<String> segments = fileUrl.pathSegments();
+		return segments.get(segments.size() - 1).replace("%20", " ");
+	}
 
 	private String getFolderName(Date date) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM");

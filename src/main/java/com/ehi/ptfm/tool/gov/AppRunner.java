@@ -13,11 +13,7 @@ import java.util.Map;
 
 public class AppRunner {
 
-	public static void main(String[] args){/*
-		String path = "https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/MA-Plan-Directory-Items/MA-Plan-Directory";
-		HttpConnector connector = new HttpConnector(path);
-		String filePath = "https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/Downloads/MA-Plan-Directory.zip";
-		connector.download(filePath);*/
+	public static void main(String[] args){
 
 		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.zip-codes.com/account_login.asp"));
 		FormBody formBody = new FormBody.Builder()

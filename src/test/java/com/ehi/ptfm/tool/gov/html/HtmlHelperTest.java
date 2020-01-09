@@ -13,7 +13,7 @@ public class HtmlHelperTest {
 	@Test
 	public void test(){
 		String str="CY 2019 September Formulary Reference File";
-		String regex = "\\d{4} | (\\d{4} (January|February|March|April|May|June|July|August|September|October|November|December))"; //正则表达式
+		String regex = "\\d{4} | (\\d{4} (January|February|March|April|May|June|July|August|September|October|November|December))";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher m = pattern.matcher(str);
 		List<String> matchRegexList = new ArrayList<String>();

@@ -33,21 +33,18 @@ public class HttpConnector {
 					@Override
 					public List<Cookie> loadForRequest(HttpUrl url) {
 						List<Cookie> cookies = cookieStore.get(url.host());
-						return cookies != null ? cookies : new ArrayList<Cookie>();
+						return cookies != null ? cookies : new ArrayList<>();
 					}
 				})
-				.addNetworkInterceptor(new Interceptor() {
-					@Override
-					public Response intercept(Chain chain) throws IOException {
-						Response response = chain.proceed(chain.request());
-						List<String> strings = chain.request().url().pathSegments();
-						if (strings.get(strings.size() -1).matches(".*zip|.*pdf|.*txt")){
-							return response.newBuilder()
-									.body(new ProgressResponseBody(response.body(), new ProgressListener()))
-									.build();
-						}
-						return response;
+				.addNetworkInterceptor(chain -> {
+					Response response = chain.proceed(chain.request());
+					List<String> strings = chain.request().url().pathSegments();
+					if (strings.get(strings.size() -1).matches(".*zip|.*pdf|.*txt")){
+						return response.newBuilder()
+								.body(new ProgressResponseBody(response.body(), new ProgressListener()))
+								.build();
 					}
+					return response;
 				})
 				.build();
 	}
@@ -55,24 +52,18 @@ public class HttpConnector {
 		this.url = url;
 	}
 
-	public void changeUrlTo(String target){
-		this.url = HttpUrl.parse(target);
+	public void changeUrlTo(HttpUrl target){
+		setUrl(target);
 	}
 	/**
 	 * @return Return the target site html text.
 	 */
 	public String getSiteBody() {
+		LOGGER.info("Connect to : " + url.toString());
 		Request request = new Request.Builder()
 				.url(url.toString())
 				.build();
-		Call call = okHttpClient.newCall(request);
-		try {
-			Response response = call.execute();
-			return response.body().string();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return "";
+		return getSiteBody(request);
 	}
 
 	/**
@@ -80,18 +71,33 @@ public class HttpConnector {
 	 * @return Return the target site html text.
 	 */
 	public String getSiteBody(FormBody formBody){
+		LOGGER.info("Connect to by form : " + url.toString());
 		Request request = new Request.Builder()
 				.url(url.toString())
 				.post(formBody)
 				.build();
+		return getSiteBody(request);
+	}
+
+	public String getSiteBody(Request request){
+		if (request == null){
+			LOGGER.info("Request can not be empty.");
+			return  "";
+		}
 		Call call = okHttpClient.newCall(request);
+		ResponseBody body = null;
 		try {
 			Response response = call.execute();
-			return response.body().string();
+			body = response.body();
+			return body.string();
 		} catch (IOException e) {
 			e.printStackTrace();
+			return "";
+		}finally {
+			if (body != null) {
+				body.close();
+			}
 		}
-		return "";
 	}
 
 	public String getHost(){
@@ -111,7 +117,7 @@ public class HttpConnector {
 			Response response = call.execute();
 			writeFile(response);
 		} catch (IOException e) {
-			LOGGER.error("Error in creating file.", e);
+			LOGGER.error("Error in creating file.\n", e);
 		}
 	}
 
@@ -164,16 +170,16 @@ public class HttpConnector {
 				fileOutputStream.flush();
 				inputStream.close();
 				fileOutputStream.close();
-				LOGGER.info(String.format("Download Success:%s.", file.getPath()));
+				LOGGER.info(String.format("Download Success:%s.\n", file.getPath()));
 			} else {
 				if (file.exists()) {
-					LOGGER.info(String.format("The file %s is exists.", file.getName()));
+					LOGGER.info(String.format("The file %s is exists.\n", file.getName()));
 				}else {
-					LOGGER.error("Error in create new file");
+					LOGGER.error("Error in create new file\n    ");
 				}
 			}
 		} else {
-			LOGGER.error("Error in getting file name.");
+			LOGGER.error("Error in getting file name.\n");
 		}
 	}
 

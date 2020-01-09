@@ -4,6 +4,13 @@ public class Selector {
 	private String selector;
 	private String textRangx;
 
+	public Selector(){
+
+	}
+	public Selector(String selector, String textRangx){
+		this.selector = selector;
+		this.textRangx = textRangx;
+	}
 	public String getSelector() {
 		return selector;
 	}

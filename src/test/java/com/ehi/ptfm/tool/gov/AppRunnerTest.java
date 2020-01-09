@@ -2,9 +2,7 @@ package com.ehi.ptfm.tool.gov;
 
 import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
 import com.ehi.ptfm.tool.gov.html.HtmlHelper;
-import com.ehi.ptfm.tool.gov.html.Selector;
 import com.ehi.ptfm.tool.gov.http.HttpConnector;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import okhttp3.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -12,9 +10,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +30,7 @@ public class AppRunnerTest {
 		Document doc = Jsoup.parse(connector.getSiteBody(formBody));
 		ArrayList<Map<String, String>> maps = HtmlHelper.getElementsByText(doc, "body>table>tbody>tr>td:nth-child(2)>div>table>tbody>tr:nth-child(2)", "Download");
 		if(maps.size() == 1){
-			connector.changeUrlTo(parseUrl(connector.getUrl(), maps.get(0).get("Download")).toString());
+			connector.changeUrlTo(connector.getUrl().resolve(maps.get(0).get("Download")));
 			maps = HtmlHelper.getElementsByText(Jsoup.parse(connector.getSiteBody()), "body > table > tbody > tr > td:nth-child(2) > div > table:nth-child(6) > tbody", "[ Download ]");
 			for (Map<String, String> map : maps){
 				connector.download(parseUrl(connector.getHost(), map.get("[ Download ]")).toString());
@@ -43,10 +39,27 @@ public class AppRunnerTest {
 	}
 
 	@Test
+	public void testDownloadSourceText(){
+		HttpConnector connector = new HttpConnector(HttpUrl.parse("http://www.nber.org/data/cbsa-msa-fips-ssa-county-crosswalk.html"));
+		Document doc = Jsoup.parse(connector.getSiteBody());
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "center", "(Source txt).*");
+
+		for (Element element : elements){
+			HttpUrl url  =parseUrl(connector.getUrl(), element.attributes().get("href").trim());
+			List<String> strs = url.pathSegments();
+			if (strs.get(strs.size() -1).matches(".*zip|.*pdf|.*txt")){
+				String urlString = url.toString();
+				connector.download(urlString);
+				break;
+			}
+		}
+	}
+
+	@Test
 	public void testDownloadMAPlanDirectory(){
 		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/MA-Plan-Directory-Items/MA-Plan-Directory"));
 		Document doc = Jsoup.parse(connector.getSiteBody());
-		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "MA Plan Directory");
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "MA Plan Directory as of Dececmber (\\d\\d\\d\\d).*");
 		for (Element element : elements){
 			HttpUrl url  =parseUrl(connector.getUrl(), element.attributes().get("href").trim());
 			List<String> strs = url.pathSegments();
@@ -61,7 +74,7 @@ public class AppRunnerTest {
 	public void testDownloadPDPPlanDirectory(){
 		HttpConnector connector = new HttpConnector(HttpUrl.parse("https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/MCRAdvPartDEnrolData/PDP-Plan-Directory-Items/PDP-Plan-Directory"));
 		Document doc = Jsoup.parse(connector.getSiteBody());
-		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "PDP Plan Directory");
+		Elements elements = HtmlHelper.getElementsBySelector(doc, "div", "PDP Plan Directory as of December (\\d\\d\\d\\d).*");
 		for (Element element : elements){
 			HttpUrl url  =parseUrl(connector.getHost(), element.attributes().get("href").trim());
 			List<String> strs = url.pathSegments();
@@ -151,22 +164,6 @@ public class AppRunnerTest {
 		}
 	}
 
-	@Test
-	public void testDownloadSourceText(){
-		HttpConnector connector = new HttpConnector(HttpUrl.parse("http://www.nber.org/data/cbsa-msa-fips-ssa-county-crosswalk.html"));
-		Document doc = Jsoup.parse(connector.getSiteBody());
-		Elements elements = HtmlHelper.getElementsBySelector(doc, "center", "(Source txt).*");
-
-		for (Element element : elements){
-			HttpUrl url  =parseUrl(connector.getUrl(), element.attributes().get("href").trim());
-			List<String> strs = url.pathSegments();
-			if (strs.get(strs.size() -1).matches(".*zip|.*pdf|.*txt")){
-				String urlString = url.toString();
-				connector.download(urlString);
-				break;
-			}
-		}
-	}
 
 	private HttpUrl parseUrl(String host, String index){
 		if (index.startsWith("/")){

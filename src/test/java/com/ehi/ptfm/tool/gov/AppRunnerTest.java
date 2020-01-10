@@ -2,6 +2,7 @@ package com.ehi.ptfm.tool.gov;
 
 import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
 import com.ehi.ptfm.tool.gov.html.HtmlHelper;
+import com.ehi.ptfm.tool.gov.html.Selector;
 import com.ehi.ptfm.tool.gov.http.HttpConnector;
 import okhttp3.*;
 import org.jsoup.Jsoup;
@@ -28,12 +29,22 @@ public class AppRunnerTest {
 				.add("redir", "account_home.asp")
 				.build();
 		Document doc = Jsoup.parse(connector.getSiteBody(formBody));
-		ArrayList<Map<String, String>> maps = HtmlHelper.getElementsByText(doc, "body>table>tbody>tr>td:nth-child(2)>div>table>tbody>tr:nth-child(2)", "Download");
-		if(maps.size() == 1){
-			connector.changeUrlTo(connector.getUrl().resolve(maps.get(0).get("Download")));
-			maps = HtmlHelper.getElementsByText(Jsoup.parse(connector.getSiteBody()), "body > table > tbody > tr > td:nth-child(2) > div > table:nth-child(6) > tbody", "[ Download ]");
-			for (Map<String, String> map : maps){
-				connector.download(parseUrl(connector.getHost(), map.get("[ Download ]")).toString());
+
+		Selector selector = new Selector("body>table>tbody>tr>td:nth-child(2)>div>table>tbody>tr:nth-child(2)", "(Download)");
+		Elements elements = HtmlHelper.getElementsBySelector(doc, selector);
+		for(Element element : elements){
+			connector.changeUrlTo(connector.getUrl().resolve(element.attributes().get("href").trim()));
+			selector.setSelector("body>table>tbody>tr>td:nth-child(2)>div>table:nth-child(6)>tbody");
+			selector.setTextRangx("(Download)");
+
+			Elements els =HtmlHelper.getElementsBySelector(Jsoup.parse(connector.getSiteBody()), selector);
+			for (Element el : els){
+				HttpUrl url  =parseUrl(connector.getUrl(), el.attributes().get("href").trim());
+				String str = url.queryParameter("type");
+				if (str!=null && str.matches("(csv)|(mdb)")){
+					String urlString = url.toString();
+					connector.download(urlString);
+				}
 			}
 		}
 	}

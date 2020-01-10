@@ -1,21 +1,24 @@
 package com.ehi.ptfm.tool.gov;
 
+import com.ehi.ptfm.tool.gov.email.excel.FileMessage;
 import com.ehi.ptfm.tool.gov.html.Selector;
 import com.ehi.ptfm.tool.gov.task.CmsFileDownloadTask;
+import com.ehi.ptfm.tool.gov.task.ZipCodeDownloadTask;
 import okhttp3.HttpUrl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class AppRunner {
 
-	public static void main(String[] args){
+	public static void main(String[] args)throws Exception{
 		CmsFileDownloadTask cmsFileDownloadTask = new CmsFileDownloadTask(initSelectors());
-		ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
-		executorService.schedule(cmsFileDownloadTask, 3, TimeUnit.SECONDS);
+		ExecutorService executorService = Executors.newScheduledThreadPool(1);
+		ArrayList<FileMessage> result = executorService.submit(cmsFileDownloadTask).get();
+		result.addAll(executorService.submit(new ZipCodeDownloadTask()).get());
+		System.out.println(result);
 	}
 	private static Map<HttpUrl, Selector> initSelectors(){
 		Map<HttpUrl, Selector> selectorMap = new HashMap<HttpUrl, Selector>();

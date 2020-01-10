@@ -11,14 +11,12 @@ import java.util.Map;
 public class HtmlHelper {
 
 
-	public static ArrayList<Map<String, String>> getElementsByText(Document doc, String selector, String textRegex) {
+	public static Map<String, String> getElementsByText(Document doc, String selector, String textRegex) {
 		Elements elements = doc.select(selector);
 		elements = elements.select(String.format("a:contains(%s)", textRegex));
-		ArrayList<Map<String, String>> nameList = new ArrayList<>();
+		Map<String, String> nameList = new HashMap<>();
 		for (Element element : elements){
-			Map<String, String> namePathMap = new HashMap<>();
-			namePathMap.put(element.textNodes().get(0).toString().trim(), element.attributes().get("href").trim());
-			nameList.add(namePathMap);
+			nameList.put(element.textNodes().get(0).toString().trim(), element.attributes().get("href").trim());
 		}
 		return nameList;
 	}

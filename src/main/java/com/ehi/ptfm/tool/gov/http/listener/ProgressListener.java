@@ -10,7 +10,7 @@ public class ProgressListener implements ProgressListen{
 			int percent = (int) (100 * bytesRead / contentLength);
 			System.out.print(String.format("Progress: %s", percent) + "%");
 		}else {
-			System.out.println("Transfer completed.");
+			System.out.println("\nTransfer completed.");
 		}
 	}
 }

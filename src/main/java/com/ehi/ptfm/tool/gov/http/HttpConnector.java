@@ -1,6 +1,8 @@
 package com.ehi.ptfm.tool.gov.http;
 
 import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
+import com.ehi.ptfm.tool.gov.email.excel.FileDownloadStatus;
+import com.ehi.ptfm.tool.gov.email.excel.FileMessage;
 import com.ehi.ptfm.tool.gov.http.listener.ProgressListener;
 import okhttp3.*;
 import org.apache.log4j.Logger;
@@ -107,7 +109,7 @@ public class HttpConnector {
 	 * @param fileUrl path of PUF file.
 	 * download file from file-url and save to local dir.
 	 */
-	public void download(String fileUrl) {
+	public FileMessage download(String fileUrl) {
 		Request request = new Request.Builder()
 				.url(fileUrl)
 				.get()
@@ -115,9 +117,10 @@ public class HttpConnector {
 		Call call = okHttpClient.newCall(request);
 		try {
 			Response response = call.execute();
-			writeFile(response);
+			return writeFile(response);
 		} catch (IOException e) {
 			LOGGER.error("Error in creating file.\n", e);
+			return null;
 		}
 	}
 
@@ -145,8 +148,29 @@ public class HttpConnector {
 		return File.separator + dateFormat.format(date).trim();
 	}
 
-	private void writeFile(Response response) throws IOException{
+	public String formatByte(long bytes){
+		long kb = 1024;
+		long mb = kb * 1024;
+		long gb = mb * 1024;
 
+		if (bytes >= gb){
+			return String.format("%.1f GB", (float)bytes / gb);
+		}else if(bytes >= mb){
+			return String.format("%.0f MB", (float)bytes / mb);
+		}else if (bytes >= kb){
+			return String.format("%.0f KB", (float)bytes / kb);
+		}else {
+			return String.format("%d B", bytes);
+		}
+	}
+
+	/**
+	 * @param response Get inputStream from response and write to local file.
+	 * @return Return message about the file which should be downloaded.
+	 * @throws IOException Throws Exception.
+	 */
+	private FileMessage writeFile(Response response) throws IOException{
+		FileMessage message = new FileMessage();
 		File file = new File(ApplicationProperties.getProperties("file.dir.root") + getFolderName(new Date()));
 		if (!file.exists()) {
 			if (file.mkdirs()) {
@@ -156,10 +180,12 @@ public class HttpConnector {
 			}
 		}
 		String fileName = getFileName(response);
+		message.setPathFrom(response.request().url().toString());
+		message.setFileName(fileName);
 		if (fileName != null && !fileName.isEmpty()) {
 			file = new File(file, fileName);
 			if (file.createNewFile()) {
-				LOGGER.info("Start to download " + file.getName());
+				LOGGER.info("Start to download " + fileName);
 				InputStream inputStream = response.body().byteStream();
 				FileOutputStream fileOutputStream = new FileOutputStream(file);
 				int length;
@@ -168,19 +194,26 @@ public class HttpConnector {
 					fileOutputStream.write(buff, 0, length);
 				}
 				fileOutputStream.flush();
+				message.setLocalPath(file.getPath());
+				message.setStatus(FileDownloadStatus.SUCCESS);
+				message.setSize(formatByte(file.length()));
 				inputStream.close();
 				fileOutputStream.close();
 				LOGGER.info(String.format("Download Success:%s.\n", file.getPath()));
 			} else {
 				if (file.exists()) {
-					LOGGER.info(String.format("The file %s is exists.\n", file.getName()));
+					message.setStatus(FileDownloadStatus.EXIST);
+					message.setSize(formatByte(file.length()));
+					LOGGER.info(String.format("The file %s is exists.\n", fileName));
 				}else {
-					LOGGER.error("Error in create new file\n    ");
+					message.setStatus(FileDownloadStatus.FAILED);
+					LOGGER.error("Error in create new file\n");
 				}
 			}
 		} else {
 			LOGGER.error("Error in getting file name.\n");
 		}
+		return message;
 	}
 
 	public HttpUrl getUrl() {

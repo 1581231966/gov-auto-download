@@ -2,7 +2,6 @@ package com.ehi.ptfm.tool.gov;
 
 import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
 import com.ehi.ptfm.tool.gov.email.FastEhealthEmail;
-import com.ehi.ptfm.tool.gov.email.excel.FileDownloadStatus;
 import com.ehi.ptfm.tool.gov.email.excel.FileMessage;
 import com.ehi.ptfm.tool.gov.html.Selector;
 import com.ehi.ptfm.tool.gov.task.CmsFileDownloadTask;

@@ -30,10 +30,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.subchen</groupId>
-            <artifactId>jetbrick-template</artifactId>
-            <version>2.1.2</version>
-            <scope>provided</scope>
+            <groupId>com.sargeraswang.util</groupId>
+            <artifactId>excel-util</artifactId>
+            <version>1.2.1</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

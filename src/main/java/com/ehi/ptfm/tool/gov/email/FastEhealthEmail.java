@@ -26,19 +26,20 @@ public class FastEhealthEmail {
 	}
 
 	public static Properties defaultConfig(Boolean debug){
-		Properties properties = new Properties();
-		properties.put("mail.smtp.auth", "true");
-		properties.put("mail.smtp.ssl.enable", "true");
-		properties.put("mail.transport.protocol", "smtp");
-		properties.put("mail.debug", null != debug ? debug.toString() : "false");
-		properties.put("mail.smtp.timeout", ApplicationProperties.getProperties("mail.smtp.timeout"));
-		properties.put("mail.smtp.port", ApplicationProperties.getProperties("mail.smtp.port"));
-		return properties;
+		Properties props = new Properties();
+		props.put("mail.transport.protocol", "smtp");
+		props.put("mail.host", ApplicationProperties.getProperties("mail.smtp.host"));
+		props.put("mail.from", ApplicationProperties.getProperties("mail.from"));
+		props.put("mail.smtp.starttls.enable", "true");
+		props.put("mail.smtp.socketFactory.fallback", "false");
+		props.put("mail.debug", debug == null?"false":debug.toString());
+		props.put("mail.smtp.socketFactory.port", "25");
+		return props;
 	}
 
 	public static Properties eHealth(boolean debug){
 		Properties props = defaultConfig(debug);
-		props.put("mail.smtp.host", ApplicationProperties.getProperties("mail.smtp.host"));
+		props.put("mail.host", ApplicationProperties.getProperties("mail.smtp.host"));
 		return props;
 	}
 
@@ -51,7 +52,7 @@ public class FastEhealthEmail {
 	public static void config(Properties props){
 		final String username = props.getProperty("username");
 		final String password = props.getProperty("password");
-		user = username;
+		user = props.getProperty("mail.from");
 		session =Session.getDefaultInstance(props, new Authenticator() {
 			@Override
 			protected PasswordAuthentication getPasswordAuthentication() {

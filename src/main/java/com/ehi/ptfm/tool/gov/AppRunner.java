@@ -1,14 +1,19 @@
 package com.ehi.ptfm.tool.gov;
 
+import com.ehi.ptfm.tool.gov.common.ApplicationProperties;
+import com.ehi.ptfm.tool.gov.email.FastEhealthEmail;
+import com.ehi.ptfm.tool.gov.email.excel.FileDownloadStatus;
 import com.ehi.ptfm.tool.gov.email.excel.FileMessage;
 import com.ehi.ptfm.tool.gov.html.Selector;
 import com.ehi.ptfm.tool.gov.task.CmsFileDownloadTask;
 import com.ehi.ptfm.tool.gov.task.ZipCodeDownloadTask;
+import com.sargeraswang.util.ExcelUtil.ExcelUtil;
 import okhttp3.HttpUrl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class AppRunner {
@@ -18,7 +23,7 @@ public class AppRunner {
 		ExecutorService executorService = Executors.newScheduledThreadPool(1);
 		ArrayList<FileMessage> result = executorService.submit(cmsFileDownloadTask).get();
 		result.addAll(executorService.submit(new ZipCodeDownloadTask()).get());
-		System.out.println(result);
+		sendMessageAsEmail(result);
 	}
 	private static Map<HttpUrl, Selector> initSelectors(){
 		Map<HttpUrl, Selector> selectorMap = new HashMap<HttpUrl, Selector>();
@@ -39,5 +44,27 @@ public class AppRunner {
 		selectorMap.put(HttpUrl.parse("https://www.cms.gov/Medicare/Prescription-Drug-Coverage/PrescriptionDrugCovGenIn/index"),
 				new Selector("div", ".*Landscape Source Files|.*Plan and Premium Information for Medicare Plans Offering Part D Coverage"));
 		return selectorMap;
+	}
+	private static void sendMessageAsEmail(ArrayList<FileMessage> messages)throws Exception{
+		FastEhealthEmail.config(FastEhealthEmail.eHealth(false),
+				ApplicationProperties.getProperties("mail.user.name"),
+				ApplicationProperties.getProperties("mail.user.password"));
+		messages.sort(Comparator.comparing(FileMessage::getFileName));
+		Map<String,String> map = new LinkedHashMap<>();
+		map.put("fileName","File name");
+		map.put("size","Size");
+		map.put("pathFrom","Url getting");
+		map.put("localPath","Local path");
+		map.put("status","Status");
+		File file = new File("PUF download tool info.xls");
+		OutputStream outputStream =  new FileOutputStream(file);
+		ExcelUtil.exportExcel(map, messages, outputStream);
+		outputStream.close();
+		FastEhealthEmail.subject("This is a testing email")
+				.from("PUF Files Download Info")
+				.to(ApplicationProperties.getProperties("eng.mail.to"))
+				.attach(file)
+				.text("The files info.")
+				.send();
 	}
 }

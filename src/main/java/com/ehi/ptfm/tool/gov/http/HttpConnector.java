@@ -204,6 +204,7 @@ public class HttpConnector {
 				if (file.exists()) {
 					message.setStatus(FileDownloadStatus.EXIST);
 					message.setSize(formatByte(file.length()));
+					message.setLocalPath(file.getPath());
 					LOGGER.info(String.format("The file %s is exists.\n", fileName));
 				}else {
 					message.setStatus(FileDownloadStatus.FAILED);

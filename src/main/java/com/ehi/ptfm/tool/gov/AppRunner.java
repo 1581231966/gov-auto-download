@@ -23,6 +23,7 @@ public class AppRunner {
 		ExecutorService executorService = Executors.newScheduledThreadPool(1);
 		ArrayList<FileMessage> result = executorService.submit(cmsFileDownloadTask).get();
 		result.addAll(executorService.submit(new ZipCodeDownloadTask()).get());
+		executorService.shutdown();
 		sendMessageAsEmail(result);
 	}
 	private static Map<HttpUrl, Selector> initSelectors(){

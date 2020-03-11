@@ -51,10 +51,10 @@ public class AppRunner {
 				ApplicationProperties.getProperties("mail.user.password"));
 		messages.sort(Comparator.comparing(FileMessage::getFileName));
 		Map<String,String> map = new LinkedHashMap<>();
-		map.put("fileName","File name");
+		map.put("fileName","File Name");
 		map.put("size","Size");
-		map.put("pathFrom","Url getting");
-		map.put("localPath","Local path");
+		map.put("pathFrom","Url Getting");
+		map.put("localPath","Local Path");
 		map.put("status","Status");
 		File file = new File("PUF download tool info.xls");
 		OutputStream outputStream =  new FileOutputStream(file);
@@ -64,7 +64,7 @@ public class AppRunner {
 				.from("PUF Files Download Info")
 				.to(ApplicationProperties.getProperties("eng.mail.to"))
 				.attach(file)
-				.text("The files info.")
+				.text("Show the file download status.")
 				.send();
 	}
 }

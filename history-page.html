@@ -1,0 +1,640 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>History page</title>
+<link rel="stylesheet" type="text/css" href="../css/main.css?version=20150906">
+<link rel="stylesheet" type="text/css" href="../css/main-page.css?version=20150906">
+<link rel="stylesheet" type="text/css" href="../css/button.css?version=20150906">
+<link rel="stylesheet" type="text/css" href="../css/datepicker/jquery-ui.min.css?version=20150906">
+</head>
+
+<body ng-app="history">
+<div class="main-page" ng-controller="historyCtrl">
+	<div ng-include="'./header.html'"></div>
+    <!--Start History page-->
+    <div class="section-wrap">
+        <h2 class="section-header section-content">
+	        <ul class="table-tabs clear">
+	            <li ng-class="{true:'active'}[pageType=='HPMS']" ng-click="changePageType('HPMS')">HPMS Loading History</li>
+	            <li ng-class="{true:'active'}[pageType=='FM']" ng-click="changePageType('FM')">Formulary History</li>
+	            <li ng-class="{true:'active'}[pageType=='planNetwork']" ng-click="changePageType('planNetwork')" style="display: none;">Plan Network History</li>
+	            <li ng-class="{true:'active'}[pageType=='MDP']" ng-click="changePageType('MDP')">Medicare Document History</li>
+	            <li ng-class="{true:'active'}[pageType=='CDL' || pageType=='SPB']" ng-click="changePageType('CDL')">CMS Data History</li>
+		    </ul>
+	        <input class="form-btn" type="button" value="↑↑ Load Files" style="float: right; width: 120px; margin-top: -37px; margin-right: 135px;" ng-click="goHome()" ng-disabled="hasPermissionOperate" >
+	        <input class="form-btn" type="button" value="Customization" style="float: right; width: 120px; margin-top: -37px;" ng-click="goCustomization()" ng-disabled="hasPermissionOperate" >
+        </h2>
+        <div ng-show="pageType=='CDL' || pageType=='SPB'">
+	        <ul class="sub-table-tabs clear">	            
+		            <li ng-class="{true:'active'}[pageType=='CDL']" ng-click="changePageType('CDL')">CMS Plan Cross Walk</li>
+		            <li ng-class="{true:'active'}[pageType=='SPB']" ng-click="changePageType('SPB')">Structured Plan Benefit</li>
+			</ul>
+		</div>
+        <div class="section-content">
+            <form id="filterForm" name="filterForm">
+			<div class="form-panel-layout" style="padding: 8px 0;">
+			<div style="line-height:20px;" ng-show="pageType!='CDL' && pageType!='FM' && pageType!='SPB'">
+					<label class="state-label">State(s):</label>
+					<div class="state-link-item"><a href="#" onclick="showCheckBox()" id="stateValue">{{stateVal}}</a><span id="textValue" ng-show="pageType=='HPMS'"></span>&nbsp;<span ng-show="pageType=='HPMS'"><input type="checkbox" ng-click="getBlankState(this)" id="isBlankState" /> blank</span></div>
+					<input type="hidden" value="{{stateVal}}" name="state" />
+					<div style="display:none;" class="select-upd-type-box" id="stateCheckBox">
+					<label ng-repeat="state in states" class="drop-down-item">
+					    {{state}}
+						<input type="checkbox" ng-click="getState(this)" class="checkBoxSelect" id="{{state}}" />
+					</label>
+					<div class="drop-down-btns">
+					  <input type="button" value="ok" id="confirmState"  />
+					  <input type="button" value="Reset" id="resetState" ng-click="resetState()"/>
+					</div>
+					</div>
+                </div>
+            <ul class="clear">
+            	<li ng-show="pageType=='CDL'">
+            		<label>Previous CMS Contract Id:</label>
+                    <input type="text" id="previousContractId" name="previousContractId" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='CDL'">
+            		<label>Previous CMS Plan Id:</label>
+                    <input type="text" id="previousPlanId" name="previousPlanId" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='CDL'">
+            		<label>Previous Plan Name:</label>
+                    <input type="text" id="previousPlanName" name="previousPlanName" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='CDL'">
+            		<label>Current CMS Contract Id:</label>
+                    <input type="text" id="currentContractId" name="currentContractId" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='CDL'">
+            		<label>Current CMS Plan Id:</label>
+                    <input type="text" id="currentPlanId" name="currentPlanId" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='CDL'">
+            		<label>Current CMS Plan Name:</label>
+                    <input type="text" id="currentPlanName" name="currentPlanName" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType!='CDL' && pageType!='FM' && pageType!='SPB'">
+                    <label>Carrier Name:</label>
+                    <input type="text" id="carrierName" name="carrierName" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='FM'">
+                    <label>Formulary ID:</label>
+                    <input type="text" id="formularyId" name="formularyId" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType!='CDL' && pageType!='SPB'">
+                    <label>Plan ID:</label>
+                    <input type="text" id="planId" name="planId" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='FM'">
+                    <label>NDC:</label>
+                    <input type="text" id="drugPricingId" name="drugPricingId" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType!='CDL' && pageType!='FM' && pageType!='SPB'">
+                    <label>Plan Name:</label>
+                    <input type="text" id="planName" name="planName" ng-keydown="initByKeyEnter($event)">
+                </li>
+                 <li ng-show="pageType=='HPMS'">
+                	<label>Plan Type:</label>
+                	<select id="planTypeId" type="text" name="planTypeId" ng-keydown="initByKeyEnter($event)">
+                		<option value=""></option>
+                		<option value="1">Cost</option>
+						<option value="2">HMO</option>
+						<option value="3">Local PPO</option>
+						<option value="4">MSA</option>
+						<option value="5">PFFS</option>
+						<option value="6">Regional PPO</option>
+						<option value="7">SELECT</option>
+						<option value="8">HMO-POS</option>
+                	</select>
+                </li>
+                <li ng-show="pageType=='HPMS'">
+                	<label>Product Type:</label>
+                	<select id="productTypeId" type="text" name="productTypeId" ng-keydown="initByKeyEnter($event)">
+                		<option value=""></option>
+                		<option value="1">MA</option>
+						<option value="2">MAO</option>
+						<option value="3">PDP</option>
+                	</select>
+                </li>
+                <li ng-show="pageType=='HPMS'">
+                	<label>Special Needs Plan Type:</label>
+                	<select id="specialNeedsPlanTypeId" type="text" name="specialNeedsPlanTypeId" ng-keydown="initByKeyEnter($event)">
+                		<option value=""></option>
+                		<option value="1">Chronic or Disabling Condition</option>
+						<option value="2">Dual-Eligible</option>
+						<option value="3">Institutional</option>
+                	</select>
+                </li>
+                <li ng-show="pageType!='CDL' && pageType!='SPB'">
+                    <label>Loaded By:</label>
+                    <input type="text" id="loadBy" name="loadBy" ng-model="loadBy" ng-keydown="initByKeyEnter($event)">
+                </li>
+                <li ng-show="pageType=='SPB'">
+                	<label>CMS Contract Id:</label>
+                	<input id="cmsContractId" type="text" name="cmsContractId" ng-keydown="initByKeyEnter($event)" />
+                </li>
+                <li ng-show="pageType=='SPB'">
+                	<label>CMS Plan Id:</label>
+                	<input id="cmsPlanId" type="text" name="cmsPlanId" ng-keydown="initByKeyEnter($event)" />
+                </li>
+                <li ng-show="pageType=='SPB'">
+                	<label>CMS Segment Id:</label>
+                	<input id="cmsSegmentId" type="text" name="cmsSegmentId" ng-keydown="initByKeyEnter($event)" />
+                </li>
+                <li ng-show="pageType=='SPB'">
+                	<label>Plan Year:</label>
+                	<select id="planYear" type="text" name="planYear">
+                	</select>
+                </li>
+                <li ng-show="pageType!='CDL'">
+                    <label>Loaded Between:</label>
+                    <input id="startDay" style="width:70px; min-width:70px; background: url(../images/calendar.png) no-repeat 82px center;" class="form-date form-date-start" type="text" name="startDay">
+                    and
+                    <input id="endDay" style="width:70px; min-width:70px; background: url(../images/calendar.png) no-repeat 82px center;" class="form-date form-date-end" type="text" name="endDay">
+                </li>
+                <li ng-show="pageType!='CDL'">
+                	<label>JIRA Number:</label>
+                	<input id="jiraNumber" type="text" name="jiraNumber" ng-keydown="initByKeyEnter($event)" />
+                </li>
+                <li ng-show="pageType=='MDP'">
+                	<label>File Status:</label>
+                	<select id="fileStatus" name="fileStatus" ng-disabled="pageType!='MDP'" >
+                        <option value="" selected="selected">ALL</option>
+                        <option value="DownloadFail">Failed</option>
+                        <option value="DownloadSuccess">Downloaded</option>
+                        <option value="SubmitSuccess">Submitted</option>
+                    </select>
+                </li>
+                <li ng-show="pageType=='CDL'">
+                    <label>Cross Walk Status:</label>
+                    <select id="crossWalkStatus" name="crossWalkStatus">
+                        <option value="" selected="selected">ALL</option>
+                        <option value="Consolidated Renewal Plan">Consolidated Renewal Plan</option>
+                        <option value="Initial Contract">Initial Contract</option>
+                        <option value="New Plan">New Plan</option>
+                        <option value="Renewal Plan">Renewal Plan</option>
+                        <option value="Renewal Plan with SAE">Renewal Plan with SAE</option>
+                        <option value="Renewal Plan with SAR">Renewal Plan with SAR</option>
+                        <option value="Terminated Plan">Terminated Plan</option>
+                        <option value="Terminated/Non-renewed Contract">Terminated/Non-renewed Contract</option>
+                        </select>
+                </li>
+                <li>
+                    <label>&nbsp;</label>
+                    <input class="form-btn" type="button" value="Search" ng-click="init()">
+                </li>
+            </ul>
+			</div>
+            </form>
+            <h5 class="form-sub-title loading-title">{{historyHeader}}</h5>
+            <div ng-show="pageType=='MDP'" style="float:right;margin-top:-35px;">
+                <span style="background-color:orange;">&nbsp;&nbsp;&nbsp;&nbsp;</span>:Failed | 
+                <span style="background-color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;</span>:Downloaded | 
+                <span style="background-color:green;">&nbsp;&nbsp;&nbsp;&nbsp;</span>:Submitted
+            </div>
+          	    <div id="fullbg"></div>
+				<div id="dialog">
+					<div id="dialog_content"></div>
+				</div>
+				<div class="search-result-wrap">
+				   <ul class="table-content-list">
+				   	   <!--Hpms plan history -->	
+				       <li ng-class="{true:'active'}[pageType=='HPMS']">
+
+							<table class="loading-search-result" width="100%" border="0"
+								cellspacing="0" cellpadding="0">
+								<tr>
+									<th class="text-algin-center">Plan Year<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planYear']"  ng-click="setOrderProp('planYear')">sort</a></th>
+									<th class="text-algin-center">State<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-state']" ng-click="setOrderProp('state')" >sort</a></th>
+									<th>Product Type<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-productLine']" ng-click="setOrderProp('productLine')" >sort</a></th>
+									<th>Carrier Name<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-orgMarketingName']" ng-click="setOrderProp('orgMarketingName')" >sort</a></th>
+									<th>Plan ID<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-[cmsContractId, cmsPlanId, cmsSegmentId]']" ng-click="setOrderProp('[cmsContractId, cmsPlanId, cmsSegmentId]')" >sort</a></th>
+									<th>Plan Name<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planName']" ng-click="setOrderProp('planName')" >sort</a></th>
+									<th>Plan Status<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-taskStatus']" ng-click="setOrderProp('taskStatus')" >sort</a></th>
+									<th>Loaded By<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-updatedBy']" ng-click="setOrderProp('updatedBy')" >sort</a></th>
+									<th class="text-algin-center">Loaded When<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-updatedWhen']" ng-click="setOrderProp('updatedWhen')" >sort</a></th>
+									<th>Jira Number<a
+										href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-jiraNumber']" ng-click="setOrderProp('jiraNumber')" >sort</a></th>
+									<th class="text-algin-center">Action</th>
+									<th class="text-algin-center">Selected<input type="checkbox" ng-click="checkAll()" ng-model="selectAllPlan" /></th>
+								</tr>
+								<tr ng-repeat="plan in plans | orderBy:orderPro">
+									<td class="text-algin-center"><p ng-bind="plan.planYear"></p></td>
+									<td class="text-algin-center"><p ng-bind="plan.state"></p></td>
+									<td><p ng-bind="plan.productLine"></p></td>
+									<td><p ng-bind-html="plan.orgMarketingName | to_trusted"></p></td>
+									<td><span ng-bind="plan.cmsContractId"></span>-<span ng-bind="plan.cmsPlanId"></span>-<span ng-bind="plan.cmsSegmentId"></span></td>
+									<td><p ng-bind-html="plan.planName | to_trusted"></p></td>
+									<td><p ng-bind="plan.planStatus"></p></td>
+									<td><p ng-bind="plan.updatedBy"></p></td>
+									<td class="text-algin-center"><p ng-bind="plan.updatedWhen"></p></td>
+									<td><a href='{{buildJiraLink(plan.jiraNumber)}}' target="_blank"><p ng-bind="plan.jiraNumber"></p></a></td>
+									<td class="text-algin-center table-action"><a href="#"
+										class="table-setup-btn">action</a>
+										<ul class="table-actions-list">
+											<li><a href="./upload-hpms-file.html?taskId={{plan.taskId}}" target="_blank">View Loading Status</a></li>
+											<li><a href="./preview-page.html?taskId={{plan.taskId}}&planId={{plan.cmsContractId}}-{{plan.cmsPlanId}}-{{plan.cmsSegmentId}}" target="_blank">Preview Data</a></li>
+											<li><a href="javascript:void(0)" ng-click="showUpdateJiraBox(plan.planId, plan.jiraNumber, 'updatePlan')">Update Jira Number</a></li>
+										</ul></td>
+									<td class="text-algin-center"><input type="checkbox" id="plan-Id-{{plan.planId}}" value={{plan}} ng-click="checkPlan(plan)" name="checkName"></td>
+								</tr>
+								<tr><td colspan="11" ng-show="isEmptyResult" style="background-color: beige;"><p ng-bind="noResultFind"></p></td></tr>
+							</table>
+                            <div class="pages-nav-wrap">
+								<label ng-show="totalNum>0">
+									Page Size
+									<select ng-init="newSize=sizeList[0]"
+											ng-model="newSize"
+											ng-options="x for x in sizeList"
+											ng-change="changeSize()"></select>
+								</label>
+                                <ul class="pages-list clear" ng-show="totalPage>1">
+                                    <li class="no-bg">Page<span ng-bind="currentPage"></span> of <span ng-bind="totalPage"></span></li>
+                                    <li><input class="form-btn" type="button" value="First" ng-click="currentPage=1;load()" /></li>
+                                    <li><input class="form-btn" type="button" value="Previous" ng-click="prev()" ng-disabled="currentPage==1"/></li>
+                                    <li ng-repeat="page in pages" ng-class="{true:'active'}[currentPage==page]"> <input class="form-btn" type="button" value={{page}} ng-click="loadPage(page)" /></li>
+                                    <li><input class="form-btn" type="button" value="Next" ng-click="next()" ng-disabled="currentPage==totalPage" /></li>
+                                    <li><input class="form-btn" type="button" value="End" ng-click="currentPage=totalPage;load()" /></li>
+                                    <li><input class="short-input" style="margin-right:20px" type="number" min="1" ng-max="totalPage" ng-model="currentPage"><input class="form-btn" type="button" value="GO" ng-click="load()"></li>
+                                </ul>
+                            </div>
+                            <div class="form-btn-list">
+				            	<input type="button" class="form-btn" id="exportToEhiTemplate" value="Export Selected EHI Benefit Template" ng-click="exportToEhiTemplate()"/>
+				            	<input type="button" class="form-btn" id="exportAllToEhiTemplate" value="Export All EHI Benefit Template" ng-click="exportAllToEhiTemplate()"/>
+				            	<input type="button" class="form-btn" id="exportToDocumentLoadingTemplate" value="Export Document Loading Template" ng-click="exportToDocumentLoadingTemplate()"/>
+				            	<input type="button" class="form-btn" id="exportAllToDocumentLoadingTemplate" value="Export All Document Loading Template" ng-click="exportAllToDocumentLoadingTemplate()"/>				          
+                                <input type="button" class="form-btn" id="exportPlanInfo" value="Export Plan Info" ng-click="exportPlanInfo()"/>
+				            </div>
+					 </li>
+                     <!-- Formulary History -->   
+                     <li ng-class="{true:'active'}[pageType=='FM']">
+                        <table class="loading-search-result" width="100%" border="0"
+                            cellspacing="0" cellpadding="0">
+                            <tr>
+                                <th class="text-algin-center">Plan Year<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planYear']"  ng-click="setOrderProp('planYear')">sort</a></th>
+                                <th>Plan ID<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-[cmsContractId, cmsPlanId]']" ng-click="setOrderProp('[cmsContractId, cmsPlanId]')" >sort</a></th>
+                                <th>Formulary ID<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-formularyId']" ng-click="setOrderProp('formularyId')" >sort</a></th>
+                                <th>NDC<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-drugPricingId']" ng-click="setOrderProp('drugPricingId')" >sort</a></th>
+                                <th>Status<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-status']" ng-click="setOrderProp('status')" >sort</a></th>
+                                <th>Loaded By<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-updatedBy']" ng-click="setOrderProp('updatedBy')" >sort</a></th>
+                                <th class="text-algin-center">Loaded When<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-updatedWhen']" ng-click="setOrderProp('updatedWhen')" >sort</a></th>
+                                <th>Jira Number<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-jiraNumber']" ng-click="setOrderProp('jiraNumber')" >sort</a></th>
+                                <th class="text-algin-center">Action</th>
+                            </tr>
+                            <tr ng-repeat="formulary in formularies | orderBy:orderPro">
+                                <td class="text-algin-center"><p ng-bind="formulary.planYear"></p></td>
+                                <td><span ng-bind="formulary.cmsContractId"></span>-<span ng-bind="formulary.cmsPlanId"></span></td>
+                                <td><p ng-bind="formulary.formularyId"></p></td>
+                                <td><p ng-bind="formulary.drugPricingId"></p></td>
+                                <td><p ng-bind="formulary.status"></p></td>
+                                <td><p ng-bind="formulary.updatedBy"></p></td>
+                                <td class="text-algin-center"><p ng-bind="formulary.updatedWhen"></p></td>
+                                <td><a href='{{buildJiraLink(formulary.jiraNumber)}}' target="_blank"><p ng-bind="formulary.jiraNumber"></p></a></td>
+                                <td class="text-algin-center table-action"><a href="#" class="table-setup-btn">action</a>
+                                    <ul class="table-actions-list">
+                                        <li><a href="./upload-hpms-file.html?taskId={{formulary.taskId}}&pageType=FM" target="_blank">View Loading Status</a></li>
+                                        <li><a href="javascript:void(0)" ng-click="showUpdateJiraBox(formulary.taskId, formulary.jiraNumber, 'updateFormulary')">Update Jira Number</a></li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr><td colspan="9" ng-show="isEmptyResultFM" style="background-color: beige;"><p ng-bind="noResultFind"></p></td></tr>
+                        </table>
+                        <div class="pages-nav-wrap">
+							<label ng-show="totalNumFM>0">
+								Page Size
+								<select ng-init="newSizeFM=sizeList[0]"
+										ng-model="newSizeFM"
+										ng-options="x for x in sizeList"
+										ng-change="changeSize()"></select>
+							</label>
+                           <ul class="pages-list clear" ng-show="totalPageFM>1">
+                               <li class="no-bg">Page<span ng-bind="currentPageFM"></span> of <span ng-bind="totalPageFM"></span></li>
+                               <li><input class="form-btn" type="button" value="First" ng-click="currentPageFM=1;load()" /></li>
+                               <li><input class="form-btn" type="button" value="Previous" ng-click="prev()" ng-disabled="currentPageFM==1"/></li>
+                               <li ng-repeat="page in pagesFM" ng-class="{true:'active'}[currentPageFM==page]"> <input class="form-btn" type="button" value={{page}} ng-click="loadPage(page)" /></li>
+                               <li><input class="form-btn" type="button" value="Next" ng-click="next()" ng-disabled="currentPageFM==totalPageFM" /></li>
+                               <li><input class="form-btn" type="button" value="End" ng-click="currentPageFM=totalPageFM;load()" /></li>
+                               <li><input class="short-input" style="margin-right:20px" type="number" min="1" ng-max="totalPageFM" ng-model="currentPageFM"><input class="form-btn" type="button" value="GO" ng-click="load()"></li>
+                           </ul>
+                        </div>
+                     </li>
+					 <!--Plan Network history -->	
+			         <li ng-class="{true:'active'}[pageType=='planNetwork']">
+						<table class="loading-search-result" width="100%" border="0"
+							cellspacing="0" cellpadding="0">
+							<tr>
+								<th class="text-algin-center">Plan Year<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planYear']"  ng-click="setOrderProp('planYear')">sort</a></th>
+								<th class="text-algin-center">State<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-state']" ng-click="setOrderProp('state')" >sort</a></th>
+								<th>Carrier Name<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-orgMarketingName']" ng-click="setOrderProp('orgMarketingName')" >sort</a></th>
+								<th>Plan ID<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-[cmsContractId, cmsPlanId, cmsSegmentId]']" ng-click="setOrderProp('[cmsContractId, cmsPlanId, cmsSegmentId]')" >sort</a></th>
+								<th>Plan Name<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planName']" ng-click="setOrderProp('planName')" >sort</a></th>
+								<th>Plan Status<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-taskStatus']" ng-click="setOrderProp('taskStatus')" >sort</a></th>
+								<th>Plan Network<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planNetwork']" ng-click="setOrderProp('planNetwork')" >sort</a></th>
+								<th>Plan Network Status<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planNetworkStatus']" ng-click="setOrderProp('planNetworkStatus')" >sort</a></th>
+								<th>Loaded By<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-updatedBy']" ng-click="setOrderProp('updatedBy')" >sort</a></th>
+								<th class="text-algin-center">Loaded When<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-updatedWhen']" ng-click="setOrderProp('updatedWhen')" >sort</a></th>
+								<th>Jira Number<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-jiraNumber']" ng-click="setOrderProp('jiraNumber')" >sort</a></th>
+								<th class="text-algin-center">Action</th>
+							</tr>
+							<tr ng-repeat="plan in planNetworks | orderBy:orderPro">
+								<td class="text-algin-center"><p ng-bind="plan.planYear"></p></td>
+								<td class="text-algin-center"><p ng-bind="plan.state"></p></td>
+								<td><p ng-bind-html="plan.orgMarketingName | to_trusted"></p></td>
+								<td><span ng-bind="plan.cmsContractId"></span>-<span ng-bind="plan.cmsPlanId"></span><span ng-show="plan.cmsSegmentId!=''">-<span ng-bind="plan.cmsSegmentId"></span></span></td>
+								<td><p ng-bind-html="plan.planName | to_trusted"></p></td>
+								<td><p ng-bind="plan.planStatus"></p></td>
+								<td><p ng-bind="plan.planNetwork"></p></td>
+								<td><p ng-bind="plan.planNetworkStatus"></p></td>
+								<td><p ng-bind="plan.updatedBy"></p></td>
+								<td class="text-algin-center"><p ng-bind="plan.updatedWhen"></p></td>
+								<td><a href='{{buildJiraLink(plan.jiraNumber)}}' target="_blank"><p ng-bind="plan.jiraNumber"></p></a></td>
+								<td class="text-algin-center table-action"><a href="#"
+									class="table-setup-btn">action</a>
+									<ul class="table-actions-list">
+										<li><a href="./upload-hpms-file.html?taskId={{plan.taskId}}" target="_blank">View Loading Status</a></li>
+										<li><a href="./preview-page.html?taskId={{plan.taskId}}&planId={{plan.cmsContractId}}-{{plan.cmsPlanId}}-{{plan.cmsSegmentId}}" target="_blank">Preview Data</a></li>
+										<li><a href="javascript:void(0)" ng-click="showUpdateJiraBox(plan.planId, plan.jiraNumber, 'updatePlan')">Update Jira Number</a></li>
+									</ul></td>
+							</tr>
+							<tr><td colspan="11" ng-show="isEmptyResultPN" style="background-color: beige;"><p ng-bind="noResultFind"></p></td></tr>
+						</table>
+                        <div class="pages-nav-wrap">
+							<label ng-show="totalNumPN>0">
+								Page Size
+								<select ng-init="newSizePN=sizeList[0]"
+										ng-model="newSizePN"
+										ng-options="x for x in sizeList"
+										ng-change="changeSize()"></select>
+							</label>
+                           <ul class="pages-list clear" ng-show="totalPagePN>1">
+                               <li class="no-bg">Page<span ng-bind="currentPagePN"></span> of <span ng-bind="totalPagePN"></span></li>
+                               <li><input class="form-btn" type="button" value="First" ng-click="currentPagePN=1;load()" /></li>
+                               <li><input class="form-btn" type="button" value="Previous" ng-click="prev()" ng-disabled="currentPagePN==1"/></li>
+                               <li ng-repeat="page in pagesPN" ng-class="{true:'active'}[currentPagePN==page]"> <input class="form-btn" type="button" value={{page}} ng-click="loadPage(page)" /></li>
+                               <li><input class="form-btn" type="button" value="Next" ng-click="next()" ng-disabled="currentPagePN==totalPagePN" /></li>
+                               <li><input class="form-btn" type="button" value="End" ng-click="currentPagePN=totalPagePN;load()" /></li>
+                               <li><input class="short-input" style="margin-right:20px" type="number" min="1" ng-max="totalPagePN" ng-model="currentPagePN"><input class="form-btn" type="button" value="GO" ng-click="load()"></li>
+                           </ul>
+                        </div>
+					 </li>
+					 <!-- Medicare pdf document history -->
+					 <li ng-class="{true:'active'}[pageType=='MDP']">					  
+						  <table class="loading-search-result" width="100%" border="0"
+							cellspacing="0" cellpadding="0">
+							<tr>
+                                <th class="text-algin-center">Plan Year<a
+                                    href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planYear']"  ng-click="setOrderProp('planYear')">sort</a></th>
+								<th class="text-algin-center">State<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-state']" ng-click="setOrderProp('state')" >sort</a></th>						
+								<th>Carrier Name<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-orgMarketingName']" ng-click="setOrderProp('orgMarketingName')" >sort</a></th>
+								<th>Plan ID<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-[cmsContractId, cmsPlanId, cmsSegmentId]']" ng-click="setOrderProp('[cmsContractId, cmsPlanId, cmsSegmentId]')" >sort</a></th>
+								<th>Plan Name<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planName']" ng-click="setOrderProp('planName')" >sort</a></th>
+								<th>Summary of Benefit<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-summaryOfBenefitName']" ng-click="setOrderProp('summaryOfBenefitName')" >sort</a></th>
+								<th>Star Ratings<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-startRatingsName']" ng-click="setOrderProp('startRatingsName')" >sort</a></th>
+								<th>Non-Discrimination Notice<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-nonDiscriminationNoticeName']" ng-click="setOrderProp('nonDiscriminationNoticeName')" >sort</a></th>
+                                <th>Evidence of Coverage<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-evidenceOfCoverageName']" ng-click="setOrderProp('evidenceOfCoverageName')" >sort</a></th>
+                                <th>Pre-Enrollment Checklist<a href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-preEnrollmentChecklistName']" ng-click="setOrderProp('preEnrollmentChecklistName')" >sort</a></th>
+                                <!--  <th>Mulit-Language<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-multiLanguageDocumentName']" ng-click="setOrderProp('multiLanguageDocumentName')" >sort</a></th>
+								-->	
+                                <th>Loaded By<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-updatedBy']" ng-click="setOrderProp('updatedBy')" >sort</a></th>
+								<th class="text-algin-center">Action</th>
+							</tr>
+							<tr ng-repeat="plan in documentPlans | orderBy:orderPro">
+                                <td class="text-algin-center"><p ng-bind="plan.planYear"></p></td>
+								<td class="text-algin-center"><p ng-bind="plan.state"></p></td>
+								<td><p ng-bind-html="plan.orgMarketingName | to_trusted"></p></td>
+								<td><span ng-bind="plan.cmsContractId"></span>-<span ng-bind="plan.cmsPlanId"></span>-<span ng-bind="plan.cmsSegmentId"></span></td>
+								<td><p ng-bind-html="plan.planName | to_trusted"></p></td>
+								<td><a href="javascript:void(0);" ng-click="downloadPDF(plan.summaryOfBenefitId)" title="{{getPDFTitle(plan.summaryOfBenefitJiraNum, plan.summaryOfBenefitErrorMsg)}}">
+                                        <p ng-class="getPDFNameClass(plan.summaryOfBenefitStatus)" ng-bind="plan.summaryOfBenefitName"></p></a></td>
+								<td><a href="javascript:void(0);" ng-click="downloadPDF(plan.startRatingsId)" title="{{getPDFTitle(plan.startRatingsJiraNum, plan.startRatingsErrorMsg)}}">
+                                        <p ng-class="getPDFNameClass(plan.startRatingsStatus)" ng-bind="plan.startRatingsName"></p></a></td>
+                                <td><a href="javascript:void(0);" ng-click="downloadPDF(plan.nonDiscriminationNoticeId)" title="{{getPDFTitle(plan.nonDiscriminationNoticeJiraNum, plan.nonDiscriminationNoticeErrorMsg)}}">
+                                    <p ng-class="getPDFNameClass(plan.nonDiscriminationNoticeStatus)" ng-bind="plan.nonDiscriminationNoticeName"></p></a></td>
+                                <td><a href="javascript:void(0);" ng-click="downloadPDF(plan.evidenceOfCoverageId)" title="{{getPDFTitle(plan.evidenceOfCoverageJiraNum, plan.evidenceOfCoverageErrorMsg)}}">
+                                    <p ng-class="getPDFNameClass(plan.evidenceOfCoverageStatus)" ng-bind="plan.evidenceOfCoverageName"></p></a></td>
+                                <td><a href="javascript:void(0);" ng-click="downloadPDF(plan.preEnrollmentChecklistId)" title="{{getPDFTitle(plan.preEnrollmentChecklistNum, plan.preEnrollmentChecklistMsg)}}">
+                                    <p ng-class="getPDFNameClass(plan.preEnrollmentChecklistStatus)" ng-bind="plan.preEnrollmentChecklistName"></p></a></td>
+                                <!--  <td><a href="javascript:void(0);" ng-click="downloadPDF(plan.multiLanguageDocumentId)" title="{{getPDFTitle(plan.multiLanguageDocumentJiraNum, plan.multiLanguageDocumentErrorMsg)}}">
+                                        <p ng-class="getPDFNameClass(plan.multiLanguageDocumentStatus)" ng-bind="plan.multiLanguageDocumentName"></p></a></td>
+                                -->
+                                <td><p ng-bind="plan.updatedBy"></p></td>
+								<td class="text-algin-center table-action"><a href="#" ng-mouseover="collectJiraNums(plan)"
+									class="table-setup-btn">action</a>
+									<ul class="table-actions-list" ng-Mouseleave="initJiraNums()">
+										<li><a href="./upload-hpms-file.html?taskId={{availableMDPTaskId}}&pageType=MDP" target="_blank">View Loading Status</a></li>
+										<li ng-show="jiraNumbers.length == 1"><a href="./preview-page.html?taskId={{jiraNumbers[0].taskId}}&planId={{plan.cmsContractId}}-{{plan.cmsPlanId}}-{{plan.cmsSegmentId}}" class="ng-binding" target="_blank">Preview Data</a>
+										<li ng-show="jiraNumbers.length > 1" class="ul-li-list"><a href="javascript:void(0)" class="ng-binding">Preview Data</a>
+										    <ul>
+										        <li ng-repeat="sjnum in jiraNumbers"><a href="./preview-page.html?taskId={{sjnum.taskId}}&planId={{plan.cmsContractId}}-{{plan.cmsPlanId}}-{{plan.cmsSegmentId}}" target="_blank">{{sjnum.jiraNum}}</a></li>
+										    </ul>
+										</li>
+                                        <li ng-show="jiraNumbers.length == 1"><a href="javascript:void(0)" ng-click="showUpdateJiraBox(jiraNumbers[0].taskId, jiraNumbers[0].jiraNum, 'updateTask')">Update Jira Number</a>
+										<li ng-show="jiraNumbers.length > 1" class="ul-li-list"><a href="javascript:void(0)">Update Jira Number</a>
+                                            <ul>
+                                                <li ng-repeat="sjnum in jiraNumbers">
+                                                    <a href="javascript:void(0)" ng-click="showUpdateJiraBox(sjnum.taskId, sjnum.jiraNum, 'updateTask')">{{sjnum.jiraNum}}</a>
+                                                </li>
+                                            </ul>
+                                        </li>
+									</ul>
+                                 </td>
+							</tr>
+							<tr><td colspan="11" ng-show="isEmptyResultMDP" style="background-color: beige;"><p ng-bind="noResultFind"></p></td></tr>
+						 </table>					  
+                         <div class="pages-nav-wrap">
+							 <label ng-show="totalNumMDP>0">
+								 Page Size
+								 <select ng-init="newSizeMDP=sizeList[0]"
+										 ng-model="newSizeMDP"
+										 ng-options="x for x in sizeList"
+										 ng-change="changeSize()"></select>
+							 </label>
+                             <ul class="pages-list clear" ng-show="totalPageMDP>1">
+                                 <li class="no-bg">Page<span ng-bind="currentPageMDP"></span> of <span ng-bind="totalPageMDP"></span></li>
+                                 <li><input class="form-btn" type="button" value="First" ng-click="currentPageMDP=1;load()" /></li>
+                                 <li><input class="form-btn" type="button" value="Previous" ng-click="prev()" ng-disabled="currentPageMDP==1"/></li>
+                                 <li ng-repeat="page in pagesMDP" ng-class="{true:'active'}[currentPageMDP==page]"> <input class="form-btn" type="button" value={{page}} ng-click="loadPage(page)" /></li>
+                                 <li><input class="form-btn" type="button" value="Next" ng-click="next()" ng-disabled="currentPageMDP==totalPageMDP" /></li>
+                                 <li><input class="form-btn" type="button" value="End" ng-click="currentPageMDP=totalPageMDP;load()" /></li>
+                                 <li><input class="short-input" style="margin-right:20px" type="number" min="1" ng-max="totalPageMDP" ng-model="currentPageMDP"><input class="form-btn" type="button" value="GO" ng-click="load()"></li>
+                             </ul>
+                         </div>
+					  </li>
+					  
+					  <!-- CMS Data history -->
+					 <li ng-class="{true:'active'}[pageType=='CDL']">					  
+						  <table class="loading-search-result" width="100%" border="0"
+							cellspacing="0" cellpadding="0">
+							<tr>
+								<th class="text-algin-center">Previous Plan Year<a
+                                    href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-previousPlanYear']"  ng-click="setOrderProp('previousPlanYear')">sort</a></th>
+                                <th class="text-algin-center">Previous CMS Contract Id<a
+                                    href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-previousCmsContractId']"  ng-click="setOrderProp('previousCmsContractId')">sort</a></th>
+								<th class="text-algin-center">Previous CMS Plan Id<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-previousCmsPlanId']" ng-click="setOrderProp('previousCmsPlanId')" >sort</a></th>						
+								<th>Previous CMS Plan Name<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-previousCmsPlanName']" ng-click="setOrderProp('previousCmsPlanName')" >sort</a></th>
+								<th>Current Plan Year<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-currentPlanYear']" ng-click="setOrderProp('currentPlanYear')" >sort</a></th>
+								<th>Current CMS Contract Id<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-currentCmsContractId']" ng-click="setOrderProp('currentCmsContractId')" >sort</a></th>
+								<th>Current CMS Plan Id<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-currentCmsPlanId']" ng-click="setOrderProp('currentCmsPlanId')" >sort</a></th>
+								<th>Current CMS Plan Name<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-currentCmsPlanName']" ng-click="setOrderProp('currentCmsPlanName')" >sort</a></th>
+								<th>Cross Walk Description<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-crosswalkStatusDescription']" ng-click="setOrderProp('crosswalkStatusDescription')" >sort</a></th>
+							</tr>
+							<tr ng-repeat="crossWalk in planCrossWalks | orderBy:orderPro">
+                                <td><p ng-bind="crossWalk.previousPlanYear"></p></td>
+								<td><p ng-bind="crossWalk.previousCmsContractId"></p></td>
+								<td><p ng-bind="crossWalk.previousCmsPlanId"></p></td>
+								<td><p ng-bind-html="crossWalk.previousPlanName | to_trusted"></p></td>
+								<td><p ng-bind="crossWalk.currentPlanYear"></p></td>
+								<td><p ng-bind="crossWalk.currentCmsContractId"></p></td>
+								<td><p ng-bind="crossWalk.currentCmsPlanId"></p></td>
+								<td><p ng-bind-html="crossWalk.currentPlanName | to_trusted"></p></td>
+								<td><p ng-bind-html="crossWalk.crosswalkStatusDescription | to_trusted"></p></td>
+							</tr>
+							<tr><td colspan="11" ng-show="isEmptyResultCDL" style="background-color: beige;"><p ng-bind="noResultFind"></p></td></tr>
+						 </table>					  
+                         <div class="pages-nav-wrap">
+							 <label ng-show="totalNumCDL>0">
+								 Page Size
+								 <select ng-init="newSizeCDL=sizeList[0]"
+										 ng-model="newSizeCDL"
+										 ng-options="x for x in sizeList"
+										 ng-change="changeSize()"></select>
+							 </label>
+                             <ul class="pages-list clear" ng-show="totalPageCDL>1">
+                                 <li class="no-bg">Page<span ng-bind="currentPageCDL"></span> of <span ng-bind="totalPageCDL"></span></li>
+                                 <li><input class="form-btn" type="button" value="First" ng-click="currentPageCDL=1;load()" /></li>
+                                 <li><input class="form-btn" type="button" value="Previous" ng-click="prev()" ng-disabled="currentPageCDL==1"/></li>
+                                 <li ng-repeat="page in pagesCDL" ng-class="{true:'active'}[currentPageCDL==page]"> <input class="form-btn" type="button" value={{page}} ng-click="loadPage(page)" /></li>
+                                 <li><input class="form-btn" type="button" value="Next" ng-click="next()" ng-disabled="currentPageCDL==totalPageCDL" /></li>
+                                 <li><input class="form-btn" type="button" value="End" ng-click="currentPageCDL=totalPageCDL;load()" /></li>
+                                 <li><input class="short-input" style="margin-right:20px" type="number" min="1" ng-max="totalPageCDL" ng-model="currentPageCDL"><input class="form-btn" type="button" value="GO" ng-click="load()"></li>
+                             </ul>
+                         </div>
+					  </li>
+					  
+					  <!-- Structured Plan Benefit history -->
+					 <li ng-class="{true:'active'}[pageType=='SPB']" id="structuredPlanBenefit-search-result">					  
+						  <table class="loading-search-result" width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<th class="text-algin-center">Plan Year<a
+                                    href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-planYear']"  ng-click="setOrderProp('planYear')">sort</a></th>
+                                <th class="text-algin-center">CMS Contract Id<a
+                                    href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-cmsContractId']"  ng-click="setOrderProp('cmsContractId')">sort</a></th>
+								<th class="text-algin-center">CMS Plan Id<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-cmsPlanId']" ng-click="setOrderProp('cmsPlanId')" >sort</a></th>		
+								<th class="text-algin-center">CMS Segment Id<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-cmsSegmentId']" ng-click="setOrderProp('cmsSegmentId')" >sort</a></th>					
+								<th class="text-algin-center">JIRA Number<a
+									href="javascript:void(0);" class="table-sort-btn" ng-class="{true:'table-sort-btn-active'}[orderPro=='-jiraNumber']" ng-click="setOrderProp('jiraNumber')" >sort</a></th>	
+								<th class="text-algin-center" style="width:15%">Benefits</th>
+								<th class="text-algin-center">Selected<input type="checkbox" ng-click="checkAll(this)" ng-model="selectAllPlan" /></th>
+							</tr>
+							<tr ng-repeat="planBenefit in structuredPlanBenefits | orderBy:orderPro">
+                                <td class="text-algin-center"><p ng-bind="planBenefit.planYear"></p></td>
+								<td class="text-algin-center"><p ng-bind="planBenefit.cmsContractId"></p></td>
+								<td class="text-algin-center"><p ng-bind="planBenefit.cmsPlanId"></p></td>
+								<td class="text-algin-center"><p ng-bind="planBenefit.cmsSegmentId"></p></td>
+								<td class="text-algin-center"><p ng-bind="planBenefit.jiraNumber"></p></td>
+								<td class="text-algin-center"><a href="javascript:void(0);" ng-click="showStructuredPlanBenefits(planBenefit.id)"><p>View Details</p></a></td>
+								<td class="text-algin-center"><input type="checkbox" id="plan-Id-{{planBenefit.id}}" value={{planBenefit.basicInfo}} ng-click="checkPlan(planBenefit)" name="checkName"/></td>
+							</tr>
+							<tr><td colspan="7" ng-show="isEmptyResultSPB" style="background-color: beige;"><p ng-bind="noResultFind"></p></td></tr>
+						 </table>					  
+                         <div class="pages-nav-wrap">
+							 <label ng-show="totalNumSPB>0">
+								 Page Size
+								 <select ng-init="newSizeSPB=sizeList[0]"
+										 ng-model="newSizeSPB"
+										 ng-options="x for x in sizeList"
+										 ng-change="changeSize()"></select>
+							 </label>
+                             <ul class="pages-list clear" ng-show="totalPageSPB>1">
+                                 <li class="no-bg">Page<span ng-bind="currentPageSPB"></span> of <span ng-bind="totalPageSPB"></span></li>
+                                 <li><input class="form-btn" type="button" value="First" ng-click="currentPageSPB=1;load()" /></li>
+                                 <li><input class="form-btn" type="button" value="Previous" ng-click="prev()" ng-disabled="currentPageCDL==1"/></li>
+                                 <li ng-repeat="page in pagesSPB" ng-class="{true:'active'}[currentPageSPB==page]"> <input class="form-btn" type="button" value={{page}} ng-click="loadPage(page)" /></li>
+                                 <li><input class="form-btn" type="button" value="Next" ng-click="next()" ng-disabled="currentPageSPB==totalPageSPB" /></li>
+                                 <li><input class="form-btn" type="button" value="End" ng-click="currentPageSPB=totalPageSPB;load()" /></li>
+                                 <li><input class="short-input" style="margin-right:20px" type="number" min="1" ng-max="totalPageSPB" ng-model="currentPageSPB"><input class="form-btn" type="button" value="GO" ng-click="load()"></li>
+                             </ul>
+                         </div>
+                         <div class="form-btn-list">
+			             	<input type="button" class="form-btn" id="exportStructuredPlanBenefits" value="Export Selected Plans" ng-click="exportStructuredPlanBenefits()"/>
+			             	<input type="button" class="form-btn" id="exportAllStructuredPlanBenefits" value="Export All Plans" ng-click="exportAllStructuredPlanBenefits()"/>
+			             </div>
+					  </li>
+				   </ul>
+				</div>
+			</div>
+    </div>
+    <!--End History page--> 
+    <div id="exportEhiTemplateModalId" class="section-content" style="display: none;">
+        <ul class="form-horizontal-layout">
+            <li>
+                <input type="checkbox" id="exportMySqlCheckboxId"><label for="exportMySqlCheckboxId">MySQL DB ({{availableMySqlPlanCount}} plan(s) available)</label>
+            </li>
+            <li>
+                <input type="checkbox" id="exportOracleCheckboxId"><label for="exportOracleCheckboxId" title="PC site DB">PC DB ({{availableOraclePlanCount}} plan(s) available)</label>
+            </li>
+        </ul>
+    </div>
+    <!-- benefit preview layer -->
+    <div id="structuredPlanBenefitLayer" class="section-content layer" style="display: none">   
+        <div class="additional-info"></div>  
+        <table class="loading-search-result" style="width:100%">
+            <thead>
+                <tr>
+                    <th class="text-algin-center" style="width:50%">Benefit Name</th>
+                    <th class="text-algin-center">Benefit Value</th>
+                </tr>
+	        </thead>
+	        <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script type="text/javascript" src="../js/jquery.js?version=20191127"></script>
+<script type="text/javascript" src="../js/jquery.fileDownload.js?version=20170514"></script>
+<script type="text/javascript" src="../js/layer/layer.js?version=20170514"></script>
+<script type="text/javascript" src="../js/angular.min.1.3.15.js?version=20150906"></script>
+<script type="text/javascript" src="../js/underscore-min.js?version=20150906"></script>
+<script type="text/javascript" src="../js/datepicker/jquery-ui.min.js?version=20150906"></script>
+<script type="text/javascript" src="../js/controller-extension.js?version=20150906"></script>
+<script type="text/javascript" src="../js/historyCtrl.js?version=20150917"></script>
+</body>
+</html>
